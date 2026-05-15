@@ -457,6 +457,31 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_agent_policy" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
+# Create a custom IAM policy to allow EC2 instances to pull images from ECR and attach it to the CloudWatch role
+resource "aws_iam_role_policy" "ecr_access_policy" {
+  name = "starttech-ecr-access-policy"
+
+  role = aws_iam_role.ec2_cloudwatch_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchGetImage",
+          "ecr:GetDownloadUrlForLayer"
+        ]
+
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # Create an IAM instance profile for the EC2 instances to use the CloudWatch role
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
   name = "starttech-ec2-instance-profile"
@@ -481,4 +506,20 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu_alarm" {
   }
 
   actions_enabled = false
+}
+
+# Create an ECR repository for the backend application
+resource "aws_ecr_repository" "app_repo" {
+  name = "starttech-backend"
+
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name        = "starttech-backend"
+    Environment = "dev"
+  }
 }
