@@ -18,3 +18,6 @@ instance_type = "t3.micro"
 
 # S3 bucket configuration
 frontend_bucket_name = "silias-starttech-frontend-bucket"
+
+# Terraform state bucket configuration
+terraform_state_bucket_name = "starttech-terraform-state-silias-2026"

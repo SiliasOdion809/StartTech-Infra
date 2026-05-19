@@ -60,6 +60,38 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
+resource "aws_eip" "nat_eip" {
+  domain = "vpc"
+
+  tags = {
+    Name = "starttech-nat-eip"
+  }
+}
+
+resource "aws_nat_gateway" "nat_gateway" {
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id     = aws_subnet.public_subnet_1.id
+
+  depends_on = [aws_internet_gateway.igw]
+
+  tags = {
+    Name = "starttech-nat-gateway"
+  }
+}
+
+resource "aws_route_table" "private_route_table" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_gateway.id
+  }
+
+  tags = {
+    Name = "starttech-private-route-table"
+  }
+}
+
 resource "aws_route_table" "public_route_table" {
   vpc_id = aws_vpc.main_vpc.id
 
@@ -81,6 +113,16 @@ resource "aws_route_table_association" "public_subnet_1_assoc" {
 resource "aws_route_table_association" "public_subnet_2_assoc" {
   subnet_id      = aws_subnet.public_subnet_2.id
   route_table_id = aws_route_table.public_route_table.id
+}
+
+# Associate private subnets with the private route table
+resource "aws_route_table_association" "private_assoc_1" {
+  subnet_id      = aws_subnet.private_subnet_1.id
+  route_table_id = aws_route_table.private_route_table.id
+}
+resource "aws_route_table_association" "private_assoc_2" {
+  subnet_id      = aws_subnet.private_subnet_2.id
+  route_table_id = aws_route_table.private_route_table.id
 }
 
 # Security group for backend servers
@@ -173,7 +215,7 @@ resource "aws_lb_target_group" "backend_target_group" {
   vpc_id   = aws_vpc.main_vpc.id
 
   health_check {
-    path                = "/"
+    path                = "/health"
     protocol            = "HTTP"
     matcher             = "200"
     interval            = 30
@@ -254,6 +296,48 @@ resource "aws_s3_bucket" "frontend_bucket" {
 
   tags = {
     Name = "starttech-frontend-bucket"
+  }
+}
+
+# Create an S3 bucket for Terraform state
+resource "aws_s3_bucket" "terraform_state" {
+  bucket = var.terraform_state_bucket_name
+
+  tags = {
+    Name = "terraform-state-bucket"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "terraform_state_versioning" {
+  bucket = aws_s3_bucket.terraform_state.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_encryption" {
+  bucket = aws_s3_bucket.terraform_state.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_dynamodb_table" "terraform_locks" {
+  name         = "terraform-locks"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "LockID"
+
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
+
+  tags = {
+    Name = "terraform-lock-table"
   }
 }
 
@@ -365,6 +449,46 @@ resource "aws_cloudfront_distribution" "frontend_cdn" {
   tags = {
     Name = "starttech-cloudfront"
   }
+}
+
+# Create a CloudWatch dashboard to monitor EC2 and ALB metrics
+resource "aws_cloudwatch_dashboard" "starttech_dashboard" {
+  dashboard_name = "starttech-dashboard"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/EC2", "CPUUtilization", "AutoScalingGroupName", aws_autoscaling_group.backend_asg.name]
+          ]
+          period = 300
+          stat   = "Average"
+          region = "eu-west-1"
+          title  = "EC2 CPU Utilization"
+        }
+      },
+      {
+        type   = "metric"
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", aws_lb.application_load_balancer.arn_suffix]
+          ]
+          period = 300
+          stat   = "Sum"
+          region = "eu-west-1"
+          title  = "ALB Request Count"
+        }
+      }
+    ]
+  })
 }
 
 # Create a security group for Redis
