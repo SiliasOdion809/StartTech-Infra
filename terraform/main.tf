@@ -12,7 +12,7 @@ resource "aws_vpc" "main_vpc" {
 resource "aws_subnet" "public_subnet_1" {
   vpc_id                  = aws_vpc.main_vpc.id
   cidr_block              = var.public_subnet_1_cidr
-  availability_zone       = "eu-west-1a"
+  availability_zone       = "us-east-1a"
   map_public_ip_on_launch = true
 
   tags = {
@@ -23,7 +23,7 @@ resource "aws_subnet" "public_subnet_1" {
 resource "aws_subnet" "public_subnet_2" {
   vpc_id                  = aws_vpc.main_vpc.id
   cidr_block              = var.public_subnet_2_cidr
-  availability_zone       = "eu-west-1b"
+  availability_zone       = "us-east-1b"
   map_public_ip_on_launch = true
 
   tags = {
@@ -35,7 +35,7 @@ resource "aws_subnet" "public_subnet_2" {
 resource "aws_subnet" "private_subnet_1" {
   vpc_id            = aws_vpc.main_vpc.id
   cidr_block        = var.private_subnet_1_cidr
-  availability_zone = "eu-west-1a"
+  availability_zone = "us-east-1a"
 
   tags = {
     Name = "private-subnet-1"
@@ -45,7 +45,7 @@ resource "aws_subnet" "private_subnet_1" {
 resource "aws_subnet" "private_subnet_2" {
   vpc_id            = aws_vpc.main_vpc.id
   cidr_block        = var.private_subnet_2_cidr
-  availability_zone = "eu-west-1b"
+  availability_zone = "us-east-1b"
 
   tags = {
     Name = "private-subnet-2"
@@ -299,32 +299,32 @@ resource "aws_s3_bucket" "frontend_bucket" {
   }
 }
 
-# Create an S3 bucket for Terraform state
-resource "aws_s3_bucket" "terraform_state" {
-  bucket = var.terraform_state_bucket_name
+# # Create an S3 bucket for Terraform state
+# resource "aws_s3_bucket" "terraform_state" {
+#   bucket = var.terraform_state_bucket_name
 
-  tags = {
-    Name = "terraform-state-bucket"
-  }
-}
+#   tags = {
+#     Name = "terraform-state-bucket"
+#   }
+# }
 
-resource "aws_s3_bucket_versioning" "terraform_state_versioning" {
-  bucket = aws_s3_bucket.terraform_state.id
+# resource "aws_s3_bucket_versioning" "terraform_state_versioning" {
+#   bucket = aws_s3_bucket.terraform_state.id
 
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
+#   versioning_configuration {
+#     status = "Enabled"
+#   }
+# }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_encryption" {
-  bucket = aws_s3_bucket.terraform_state.id
+# resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_encryption" {
+#   bucket = aws_s3_bucket.terraform_state.id
 
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
+#   rule {
+#     apply_server_side_encryption_by_default {
+#       sse_algorithm = "AES256"
+#     }
+#   }
+# }
 
 resource "aws_dynamodb_table" "terraform_locks" {
   name         = "terraform-locks"

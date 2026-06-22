@@ -1,4 +1,4 @@
-aws_region = "eu-west-1"
+aws_region = "us-east-1"
 vpc_cidr   = "10.0.0.0/16"
 
 # Public subnets for load balancer and NAT gateway
@@ -13,11 +13,11 @@ private_subnet_2_cidr = "10.0.4.0/24"
 key_name = "starttech-key"
 
 # EC2 instance configuration
-ami_id        = "ami-0de864d6a3bd20ea8"
+ami_id        = "ami-0b6d9d3d33ba97d99"
 instance_type = "t3.micro"
 
 # S3 bucket configuration
-frontend_bucket_name = "silias-starttech-frontend-bucket"
+frontend_bucket_name = "silias-starttech-frontend-bucket-3757"
 
 # Terraform state bucket configuration
 terraform_state_bucket_name = "starttech-terraform-state-silias-2026"
